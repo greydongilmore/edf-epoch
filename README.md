@@ -11,27 +11,23 @@
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
 [![MIT License][license-shield]][license-url]
-[![LinkedIn][linkedin-shield]][linkedin-url]
-
 
 
 <!-- PROJECT LOGO -->
 <br />
 <p align="center">
   <a href="https://github.com/greydongilmore/edf-epoch">
-    <img src="images/logo.png" alt="Logo" width="80" height="80">
+    <img src="imgs/logo.png" alt="Logo" width="80" height="80">
   </a>
 
-  <h3 align="center">project_title</h3>
+  <h3 align="center">edf epoch</h3>
 
   <p align="center">
-    project_description
+    EDF+ epoch creation tool
     <br />
     <a href="https://github.com/greydongilmore/edf-epoch"><strong>Explore the docs »</strong></a>
     <br />
     <br />
-    <a href="https://github.com/greydongilmore/edf-epoch">View Demo</a>
-    ·
     <a href="https://github.com/greydongilmore/edf-epoch/issues">Report Bug</a>
     ·
     <a href="https://github.com/greydongilmore/edf-epoch/issues">Request Feature</a>
@@ -58,7 +54,6 @@
       </ul>
     </li>
     <li><a href="#usage">Usage</a></li>
-    <li><a href="#roadmap">Roadmap</a></li>
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
     <li><a href="#contact">Contact</a></li>
@@ -75,9 +70,8 @@ This code snippet will create an epoch from an EDF+ file given a start and end t
 
 ### Built With
 
-* []()
-* []()
-* []()
+* Python version: 3.9
+
 
 <!-- GETTING STARTED -->
 ## Getting Started
