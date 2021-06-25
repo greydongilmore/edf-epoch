@@ -80,18 +80,25 @@ To get a local copy up and running follow these simple steps.
 
 ### Prerequisites
 
-This is an example of how to install the required Python packages. In the root of the project folder run the following:
+No Prerequisites required. Any Python3 version will suffice.
 
+### Installation
+
+1. In a terminal, clone the repo by running:
+   ```sh
+   git clone https://github.com/greydongilmore/edf-epoch.git
+   ```
+
+2. Change into the project directory (update path to reflect where you stored this project directory):
+  ```sh
+  cd /home/user/Documents/Github/edf-epoch
+  ```
+
+3. Install the required Python packages:
   ```sh
   python -m pip install -r requirements.txt
   ```
 
-### Installation
-
-1. Clone the repo
-   ```sh
-   git clone https://github.com/greydongilmore/edf-epoch.git
-   ```
 
 <!-- USAGE EXAMPLES -->
 ## Usage
@@ -100,13 +107,16 @@ This is an example of how to install the required Python packages. In the root o
    ```sh
    cd /home/user/Documents/Github/edf-epoch
    ```
-2. Run the following to execute the epoch script
+
+2. Run the following to execute the epoch script:
   ```sh
   python main.py -i "full/path/to/edf/file" -s 10 -e 400
   ```
-  * **-i:** is the full file path to the EDF file you want to epoch
-  * **-s:** is the starting time for the epoch (in seconds)
-  * **-e:** is the ending time for the epoch (in seconds)
+
+  * **-i:** full file path to the EDF file you want to epoch
+  * **-s:** starting time for the epoch (in seconds)
+  * **-e:** ending time for the epoch (in seconds)
+
 
 <!-- CONTRIBUTING -->
 ## Contributing
@@ -119,10 +129,12 @@ Contributions are what make the open source community such an amazing place to b
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
+
 <!-- LICENSE -->
 ## License
 
 Distributed under the MIT License. See `LICENSE` for more information.
+
 
 <!-- CONTACT -->
 ## Contact
@@ -131,12 +143,11 @@ Greydon Gilmore - [@GilmoreGreydon](https://twitter.com/GilmoreGreydon) - greydo
 
 Project Link: [https://github.com/greydongilmore/edf-epoch](https://github.com/greydongilmore/edf-epoch)
 
+
 <!-- ACKNOWLEDGEMENTS -->
 ## Acknowledgements
 
 * README format was adapted from [Best-README-Template](https://github.com/othneildrew/Best-README-Template)
-* []()
-* []()
 
 
 <!-- MARKDOWN LINKS & IMAGES -->
