@@ -80,10 +80,10 @@ To get a local copy up and running follow these simple steps.
 
 ### Prerequisites
 
-This is an example of how to list things you need to use the software and how to install them.
-* npm
+This is an example of how to install the required Python packages. In the root of the project folder run the following:
+
   ```sh
-  npm install npm@latest -g
+  python -m pip install -r requirements.txt
   ```
 
 ### Installation
