@@ -109,9 +109,9 @@ No Prerequisites required. Any Python3 version will suffice.
      ```
 
 2. Run the following to execute the epoch script:
-  ```sh
-  python main.py -i "full/path/to/edf/file" -s 10 -e 400
-  ```
+    ```sh
+    python main.py -i "full/path/to/edf/file" -s 10 -e 400
+    ```
 
   * **-i:** full file path to the EDF file you want to epoch
   * **-s:** starting time for the epoch (in seconds)
@@ -147,6 +147,7 @@ Project Link: [https://github.com/greydongilmore/edf-epoch](https://github.com/g
 <!-- ACKNOWLEDGEMENTS -->
 ## Acknowledgements
 
+* [EDFlib-Python](https://gitlab.com/Teuniz/EDFlib-Python) created by Teunis van Beelen 
 * README format was adapted from [Best-README-Template](https://github.com/othneildrew/Best-README-Template)
 
 
