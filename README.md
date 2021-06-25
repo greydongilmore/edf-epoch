@@ -81,7 +81,7 @@ To get a local copy up and running follow these simple steps.
 
 ### Prerequisites
 
-No Prerequisites required. Any Python3 version will suffice.
+* No Prerequisites required. Any Python3 version will suffice.
 
 ### Installation
 
