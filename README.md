@@ -110,9 +110,9 @@ This is an example of how to list things you need to use the software and how to
   ```sh
   python main.py -i "full/path/to/edf/file" -s 10 -e 400
   ```
-* **-i:** is the full file path to the EDF file you want to epoch
-* **-s:** is the starting time for the epoch (in seconds)
-* **-e:** is the ending time for the epoch (in seconds)
+  * **-i:** is the full file path to the EDF file you want to epoch
+  * **-s:** is the starting time for the epoch (in seconds)
+  * **-e:** is the ending time for the epoch (in seconds)
 
 <!-- CONTRIBUTING -->
 ## Contributing
@@ -133,19 +133,16 @@ Distributed under the MIT License. See `LICENSE` for more information.
 <!-- CONTACT -->
 ## Contact
 
-Greydon Gilmore - [@twitter_handle](https://twitter.com/gilmoregreydon) - greydon.gilmore@gmail.com
+Greydon Gilmore - [@GilmoreGreydon](https://twitter.com/GilmoreGreydon) - greydon.gilmore@gmail.com
 
 Project Link: [https://github.com/greydongilmore/edf-epoch](https://github.com/greydongilmore/edf-epoch)
 
 <!-- ACKNOWLEDGEMENTS -->
 ## Acknowledgements
 
-* [Best-README-Template](https://github.com/othneildrew/Best-README-Template)
+* README format was adapted from [Best-README-Template](https://github.com/othneildrew/Best-README-Template)
 * []()
 * []()
-
-
-
 
 
 <!-- MARKDOWN LINKS & IMAGES -->
