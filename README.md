@@ -148,7 +148,6 @@ Project Link: [https://github.com/greydongilmore/edf-epoch](https://github.com/g
 <!-- ACKNOWLEDGEMENTS -->
 ## Acknowledgements
 
-* [EDFlib-Python](https://gitlab.com/Teuniz/EDFlib-Python) created by Teunis van Beelen 
 * README format was adapted from [Best-README-Template](https://github.com/othneildrew/Best-README-Template)
 
 
