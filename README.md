@@ -85,28 +85,28 @@ No Prerequisites required. Any Python3 version will suffice.
 ### Installation
 
 1. In a terminal, clone the repo by running:
-   ```sh
-   git clone https://github.com/greydongilmore/edf-epoch.git
-   ```
+    ```sh
+    git clone https://github.com/greydongilmore/edf-epoch.git
+    ```
 
 2. Change into the project directory (update path to reflect where you stored this project directory):
-  ```sh
-  cd /home/user/Documents/Github/edf-epoch
-  ```
+    ```sh
+    cd /home/user/Documents/Github/edf-epoch
+    ```
 
 3. Install the required Python packages:
-  ```sh
-  python -m pip install -r requirements.txt
-  ```
+    ```sh
+    python -m pip install -r requirements.txt
+    ```
 
 
 <!-- USAGE EXAMPLES -->
 ## Usage
 
 1. In a terminal, move into the project directory
-   ```sh
-   cd /home/user/Documents/Github/edf-epoch
-   ```
+     ```sh
+     cd /home/user/Documents/Github/edf-epoch
+     ```
 
 2. Run the following to execute the epoch script:
   ```sh
