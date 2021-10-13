@@ -35,10 +35,19 @@ if debug:
 		def __init__(self, **kwargs):
 			self.__dict__.update(kwargs)
 	
-	data_fname = '/media/veracrypt6/projects/eplink/walkthrough_example/ieeg_sample/input/EPL31_LHS_0010/EPL31_LHS_0010_01_SE05_IEEG_CS/sub-EPL31LHS0010_ses-V01SE06_task-full_run-01_ieeg.edf'
-	start_time = 10
-	end_time= 500
-	args = Namespace(data_fname=data_fname, start_time=start_time, end_time=end_time)
+	data_fname = '/media/veracrypt6/projects/eplink/walkthrough_example/ieeg_sample/input/EPL31_LHS_0010/EPL31_LHS_0010_01_SE05_IEEG_CLIP/sub-EPL31LHS0010_ses-V01SE05_task-clip_run-01_ieeg.edf'
+	start_time = 1
+	end_time= 50.0
+	chans_keep=['LAHc1',
+		 'LAHc2',
+		 'LAHc3',
+		 'LAHc4',
+		 'LAHc5',
+		 'LAHc6',
+		 'LAHc7',
+		 'LAHc8',
+		 'LAHc9']
+	args = Namespace(data_fname=data_fname, start_time=start_time, end_time=end_time,channels_keep=chans_keep)
 
 def main(args):
 	
@@ -51,14 +60,22 @@ def main(args):
 	# determine the annoation data block index
 	tal_indx = [i for i,x in enumerate(header['chan_info']['ch_names']) if x.endswith('Annotations')][0]
 	
+	if args.channels_keep is None:
+		args.channels_keep=header['chan_info']['ch_names']
+	
+	ch_indx = [i for i,x in enumerate(header['chan_info']['ch_names']) if any(y==x for y in args.channels_keep)]
+	
 	# determine the size of the data block
 	blocksize = np.sum(header['chan_info']['n_samps']) * header['meas_info']['data_size']
 	start_block = int(args.start_time/header['meas_info']['record_length'])
-	end_block = int((args.end_time)/header['meas_info']['record_length'])
+	end_block = int(args.end_time/header['meas_info']['record_length'])
+	start_milli=float(args.start_time-int(args.start_time))/header['meas_info']['record_length']
+	end_milli=float(args.end_time-int(args.end_time))/header['meas_info']['record_length']
 	
-	# obtain annoation start index
+	# obtain annotation start index
 	tal_start=np.sum([x for i,x in enumerate(header['chan_info']['n_samps']) if i !=tal_indx])* header['meas_info']['data_size']
 	
+	# read header info as bytearray chunk (size of header is stored in 'data_offset')
 	hdr=bytearray(header['meas_info']['data_offset'])
 	with open(args.data_fname, 'rb') as fid:
 		fid.seek(0, io.SEEK_SET)
@@ -75,7 +92,7 @@ def main(args):
 	print('Slicing data...')
 	
 	update_cnt = start_block+int((end_block-start_block)/10)
-	start_time_adjust=args.start_time+float(header['meas_info']['record_length'])
+	start_time_adjust=args.start_time-float(header['meas_info']['millisecond'])
 	pat = '([+-]\\d+\\.?\\d*)\x14'
 	for iblock in range(start_block, end_block):
 		blockMap = bytearray(blocksize)
@@ -83,14 +100,14 @@ def main(args):
 			fid.seek(header['meas_info']['data_offset']+(iblock*blocksize), io.SEEK_SET)
 			fid.readinto(blockMap)
 		
+		# find all annotation signals
 		raw = re.findall(pat, blockMap[tal_start:].decode('latin-1'))
 		
+		# need to adjust the time for all annotations
 		new_block=[]
 		for iraw in raw:
-			if len(str(header['meas_info']['record_length']))==6:
-				update_time=bytes('{0:.4f}'.format((float(iraw)-start_time_adjust)+float(header['meas_info']['record_length'])),'latin-1')
-			else:
-				update_time=bytes('{0:.3f}'.format((float(iraw)-start_time_adjust)+float(header['meas_info']['record_length'])),'latin-1')
+			num_decimals = iraw[::-1].find('.')
+			update_time=bytes(format((float(iraw)-start_time_adjust)+float(header['meas_info']['millisecond']), f".{num_decimals}f"),'latin-1')
 			
 			if new_block:
 				new_block = bytearray(re.sub(bytes(str(float(iraw)),'latin-1'),update_time,new_block))
