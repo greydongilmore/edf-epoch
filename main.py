@@ -3,136 +3,126 @@
 
 import os
 import numpy as np
-import pandas as pd
-pd.set_option('precision', 6)
-import io
-import regex as re
 import argparse
-
-from helpers import EDFReader
+import pyedflib
+import datetime
+import io
 
 debug=False
 
-def padtrim(buf, num):
-	num -= len(buf)
-	if num>=0:
-		if isinstance(buf,str):
-			buffer = (buf + ' ' * num)
-			buffer = bytes(buffer, 'latin-1')
-		else:
-			# pad the input to the specified length
-			buffer = (buf + bytes('', 'latin-1') * num)
-	else:
-		# trim the input to the specified length
-		buffer = (buf[0:num])
-		if isinstance(buffer,str):
-			buffer = bytes(buffer, 'latin-1')
-	
-	return buffer
 
 if debug:
 	class Namespace:
 		def __init__(self, **kwargs):
 			self.__dict__.update(kwargs)
 	
-	data_fname = '/media/veracrypt6/projects/eplink/walkthrough_example/ieeg_sample/input/EPL31_LHS_0010/EPL31_LHS_0010_01_SE05_IEEG_CLIP/sub-EPL31LHS0010_ses-V01SE05_task-clip_run-01_ieeg.edf'
-	start_time = 1
-	end_time= 50.0
-	chans_keep=['LAHc1',
-		 'LAHc2',
-		 'LAHc3',
-		 'LAHc4',
-		 'LAHc5',
-		 'LAHc6',
-		 'LAHc7',
-		 'LAHc8',
-		 'LAHc9']
-	args = Namespace(data_fname=data_fname, start_time=start_time, end_time=end_time,channels_keep=chans_keep)
+	data_fname = '/media/greydon/Snobeanery/data/ieeg_data/bids/sub-101/ses-015/ieeg/sub-101_ses-015_task-stim_run-02_ieeg.edf'
+	start_time = 162.566
+	end_time= 426.657
+	chans_keep=None
+	args = Namespace(data_fname=data_fname, start_time=start_time, end_time=end_time,chans_keep=chans_keep)
 
 def main(args):
 	
 	out_fname = os.path.splitext(args.data_fname)[0]+'_epoch.edf'
 	
 	#read in the file
-	file_in = EDFReader()
-	header = file_in.open(args.data_fname)
+	ef = pyedflib.EdfReader(args.data_fname)
+	header = ef.getHeader()
+	annotation_data=ef.readAnnotations()
+	labels = ef.getSignalLabels()
+	sf = int(ef.samples_in_datarecord(1) / ef.datarecord_duration)
+	header['startdate'] =  (header['startdate'] + datetime.timedelta(seconds=args.start_time))
+	
+	if args.chans_keep is None:
+		args.chans_keep=labels
+	
+	n_samps=[]
+	signal_headers=[]
+	for chn in range(len(labels)):
+		signal_headers.append({
+			'label': ef.getLabel(chn),
+			'dimension': ef.getPhysicalDimension(chn),
+			'sample_rate': int(ef.samples_in_datarecord(chn) / ef.datarecord_duration),
+			'sample_frequency': int(ef.samples_in_datarecord(chn) / ef.datarecord_duration),
+			'physical_max':ef.getDigitalMaximum(chn),
+			'physical_min':  ef.getDigitalMinimum(chn),
+			'digital_max': ef.getDigitalMaximum(chn),
+			'digital_min': ef.getDigitalMinimum(chn),
+			'prefilter':ef.getPrefilter(chn),
+			'transducer': ef.getTransducer(chn)
+		})
+		n_samps.append(ef.samples_in_datarecord(chn))
+	
+	n_samps=np.array(n_samps)/ef.datarecord_duration
+	blocksize = int(np.sum(n_samps) * 2)
 	
 	# determine the annoation data block index
-	tal_indx = [i for i,x in enumerate(header['chan_info']['ch_names']) if x.endswith('Annotations')][0]
-	
-	if args.channels_keep is None:
-		args.channels_keep=header['chan_info']['ch_names']
-	
-	ch_indx = [i for i,x in enumerate(header['chan_info']['ch_names']) if any(y==x for y in args.channels_keep)]
+	ch_indx = [i for i,x in enumerate(labels) if any(y==x for y in args.chans_keep)]
 	
 	# determine the size of the data block
-	blocksize = np.sum(header['chan_info']['n_samps']) * header['meas_info']['data_size']
-	start_block = int(args.start_time/header['meas_info']['record_length'])
-	end_block = int(args.end_time/header['meas_info']['record_length'])
-	start_milli=float(args.start_time-int(args.start_time))/header['meas_info']['record_length']
-	end_milli=float(args.end_time-int(args.end_time))/header['meas_info']['record_length']
+	start_sample = int(args.start_time*sf)
+	stop_sample = int(args.end_time*sf)
 	
-	# obtain annotation start index
-	tal_start=np.sum([x for i,x in enumerate(header['chan_info']['n_samps']) if i !=tal_indx])* header['meas_info']['data_size']
+	sigbufs = [np.zeros(stop_sample-start_sample,np.int32,'C') for i in np.arange(len(ch_indx))]
+	for i in ch_indx:
+		sigbufs[i][:] = ef.readSignal(i, start_sample, stop_sample-start_sample)
+		print(f"Done channel {i}")
 	
-	# read header info as bytearray chunk (size of header is stored in 'data_offset')
-	hdr=bytearray(header['meas_info']['data_offset'])
-	with open(args.data_fname, 'rb') as fid:
-		fid.seek(0, io.SEEK_SET)
-		fid.readinto(hdr)
+	file_out = pyedflib.EdfWriter(out_fname, len(ch_indx), file_type=pyedflib.FILETYPE_EDFPLUS)
+	file_out.setSamplefrequency=sf
+	file_out.setSignalHeaders(signal_headers)
+	file_out.setHeader(header)
+	file_out.recording_start_time.replace(microsecond=header['startdate'].microsecond)
+	file_out.writeSamples(sigbufs, digital=False)
 	
-	# update header with new data block size
-	hdr[236:244]=padtrim(str(end_block-start_block),len(hdr[236:244]))
+	file_out.writeAnnotation((header['startdate'].microsecond/1000000), -1, "Starting")
+	if isinstance(annotation_data,tuple):
+		for row in zip(annotation_data[0],annotation_data[1],annotation_data[2]):
+			if row[0]>= args.start_time and row[0] <= args.end_time:
+				file_out.writeAnnotation(row[0], row[1], row[2])
 	
-	# write the header info so new edf file
-	with open(out_fname, "wb") as file_out:
-		file_out.write(hdr)
 	
-	print('\n')
-	print('Slicing data...')
 	
-	update_cnt = start_block+int((end_block-start_block)/10)
-	start_time_adjust=args.start_time-float(header['meas_info']['millisecond'])
-	pat = '([+-]\\d+\\.?\\d*)\x14'
-	for iblock in range(start_block, end_block):
-		blockMap = bytearray(blocksize)
-		with open(args.data_fname, 'rb') as fid:
-			fid.seek(header['meas_info']['data_offset']+(iblock*blocksize), io.SEEK_SET)
-			fid.readinto(blockMap)
+	file_out.close()
+	ef.close()
+	
+	from helpers import EDFReader
+	file_in = EDFReader()
+	header = file_in.open(out_fname)
+	
+	with open(out_fname, 'rb') as fid:
+		fid.seek(184, io.SEEK_SET)
+		data_offset=int(fid.read(8).decode())
+		fid.read(44)
+		fid.read(8).decode()
+		dur_record=int(fid.read(8).decode())
+		n_signals=int(fid.read(4).decode())
 		
-		# find all annotation signals
-		raw = re.findall(pat, blockMap[tal_start:].decode('latin-1'))
 		
-		# need to adjust the time for all annotations
-		new_block=[]
-		for iraw in raw:
-			num_decimals = iraw[::-1].find('.')
-			update_time=bytes(format((float(iraw)-start_time_adjust)+float(header['meas_info']['millisecond']), f".{num_decimals}f"),'latin-1')
-			
-			if new_block:
-				new_block = bytearray(re.sub(bytes(str(float(iraw)),'latin-1'),update_time,new_block))
-			else:
-				new_block = bytearray(re.sub(bytes(str(float(iraw)),'latin-1'),update_time,blockMap[tal_start:]))
+	with open(out_fname, 'rb') as fid:
+		fid=open(out_fname, 'rb')
+		pat = '([+-]\\d+\\.?\\d*)(\x15(\\d+\\.?\\d*))?(\x14.*?)\x14\x00'
+		assert(fid.tell() == 0)
+		fid.seek(np.int64(data_offset) + np.int64(0) * np.int64(blocksize))
+		read_idx = 0
+		for i in range(len(n_samps)):
+			buf = fid.read(np.int64(n_samps[i])*2)
+		buf = fid.read(np.int64(57)*2)
+		raw = re.findall(pat, buf.decode('latin-1'))
+		if raw:
+			list(map(list, [x+(0,) for x in raw]))
 		
-		if len(new_block) < len(blockMap[tal_start:]):
-			new_block=new_block+(bytes('\x00','latin-1')*(len(blockMap[tal_start:])-len(new_block)))
-		elif len(new_block) > len(blockMap[tal_start:]):
-			new_block=new_block[0:(len(blockMap[tal_start:])-len(new_block))]
-			
-		with open(out_fname, "ab") as file_out:
-			file_out.write(blockMap[:tal_start]+new_block)
-		
-		if iblock == update_cnt and iblock < end_block-1:
-			print('{}%'.format(int((update_cnt/end_block)*100)))
-			update_cnt += int((end_block-start_block)/10)
+		fid.close()
 
 if __name__ == "__main__":
 
 	# Input arguments
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-i', '--data_fname', help='Path to original EDF file.', required=True)
-	parser.add_argument('-s', '--start_time', type=float, help='Start time of epoch (seconds).', required=True)
-	parser.add_argument('-e', '--end_time', type=float, help='End time of epoch (seconds).')
+	parser.add_argument('-s', '--start_time', type=float, help='Start time of epoch (seconds i.e. 1037.371).', required=True)
+	parser.add_argument('-e', '--end_time', type=float, help='End time of epoch (seconds i.e. 1244.652).', required=True)
+	parser.add_argument('-c', '--chans_keep', type=list, help='Comma seperated list of channel names to keep (i.e. "LAHC1","LAHC2","LAHC3").',default=None)
 	args = parser.parse_args()
 
 	main(args)

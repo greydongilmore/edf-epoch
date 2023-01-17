@@ -4,7 +4,6 @@
 import os
 import numpy as np
 import pandas as pd
-pd.set_option('precision', 6)
 import json
 import datetime
 import warnings
