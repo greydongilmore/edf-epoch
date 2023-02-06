@@ -5,6 +5,7 @@ import os
 import numpy as np
 import argparse
 import pyedflib
+import datetime
 debug=False
 
 
@@ -14,16 +15,17 @@ if debug:
 		def __init__(self, **kwargs):
 			self.__dict__.update(kwargs)
 	
-	sub_num='sub-055'
+	sub_num='sub-0'
 	ses_num='ses-013'
 	
 	out_dir='/home/greydon/Downloads'
 	bids_dir=r'/media/greydon/Snobeanery/data/ieeg_data/bids'
 	
-	data_fname=glob.glob(f'{bids_dir}/{sub_num}/{ses_num}/ieeg/{sub_num}_{ses_num}_task-*_ieeg.edf')
-	out_fname = os.path.join(out_dir,f'{sub_num}_ses-{ses_num}_desc-task_ieeg.edf')
-	start_time = 3931.914
-	end_time= 4269.992
+	#data_fname=glob.glob(f'{bids_dir}/{sub_num}/{ses_num}/ieeg/{sub_num}_{ses_num}_task-*_ieeg.edf')
+	data_fname=f'/home/greydon/Downloads/Fetterly~ Jess_9a6db4dd-8503-49bc-8b42-3fd452dafc97_stim.EDF'
+	out_fname = os.path.splitext(data_fname)[0]+'_epoch.edf'
+	start_time = 0
+	end_time= 920
 	chans_keep=None
 	args = Namespace(data_fname=data_fname, start_time=start_time, end_time=end_time,chans_keep=chans_keep,out_fname=out_fname)
 
@@ -35,55 +37,24 @@ def main(args):
 	else:
 		out_fname = os.path.splitext(args.data_fname)[0]+'_epoch.edf'
 	
-	ef = pyedflib.EdfReader(args.data_fname)
-	header = ef.getHeader()
-	nch  = ef.signals_in_file
-	fs = int(ef.samples_in_datarecord(1) / ef.datarecord_duration)
-	annotation_data=ef.readAnnotations()
+	signals, signal_headers, header = pyedflib.highlevel.read_edf(args.data_fname,ch_nrs=args.chans_keep,start_time=args.start_time,stop_time=args.end_time,verbose=True)
 	
-	if args.chans_keep is None:
-		args.chans_keep=[x for x in range(nch)]
+	all_labels=[header['SignalHeaders'][x]['label'] for x in range(len(header['SignalHeaders']))]
 	
 	# determine the annoation data block index
-	ch_indx = [i for i,x in enumerate(range(nch)) if any(y==x for y in args.chans_keep)]
+	ch_indx = [i for i,x in enumerate(all_labels) if x in header['channels']]
 	
-	signal_headers=[]
-	for chn in ch_indx:
-		signal_headers.append({
-			'label': ef.getLabel(chn),
-			'dimension': ef.getPhysicalDimension(chn),
-			'sample_rate': int(ef.samples_in_datarecord(chn) / ef.datarecord_duration),
-			'sample_frequency': int(ef.samples_in_datarecord(chn) / ef.datarecord_duration),
-			'physical_max':ef.getDigitalMaximum(chn),
-			'physical_min':  ef.getDigitalMinimum(chn),
-			'digital_max': ef.getDigitalMaximum(chn),
-			'digital_min': ef.getDigitalMinimum(chn),
-			'prefilter':ef.getPrefilter(chn),
-			'transducer': ef.getTransducer(chn)
-		})
-	
-	
-	start_sample=int(args.start_time*fs)
-	stop_sample=int(args.end_time*fs)
-	sigbufs = [np.zeros(int(stop_sample-start_sample),np.int16,order='C') for x in range(len(ch_indx))]
 	for i in ch_indx:
-		sigbufs[i][:]=ef.readSignal(i,start_sample, int(stop_sample-start_sample),digital=False)
-		print(f"Done channel {i}")
+		header['SignalHeaders'][i]['physical_min']=int(header['SignalHeaders'][i]['physical_min'])
+		header['SignalHeaders'][i]['physical_max']=int(header['SignalHeaders'][i]['physical_max'])
+		header['SignalHeaders'][i]['sample_rate']=header['sampling_frequency']
+		header['SignalHeaders'][i]['sample_frequency']=header['sampling_frequency']
+	
+	header['SignalHeaders'][-1]['physical_min']=42900000
+	
+	pyedflib.highlevel.write_edf(out_fname, signals, header['SignalHeaders'], header)
 	
 	
-	file_out = pyedflib.EdfWriter(out_fname, len(ch_indx), file_type=pyedflib.FILETYPE_EDFPLUS)
-	file_out.setSignalHeaders(signal_headers)
-	file_out.setHeader(header)
-	file_out.writeSamples(sigbufs, digital=False)
-	
-	for onset,duration,event in zip(annotation_data[0],annotation_data[1],annotation_data[2]):
-		if onset > args.start_time and onset < args.end_time:
-			print(onset-args.start_time, duration, event)
-			file_out.writeAnnotation(onset-args.start_time, duration, event)
-	
-	file_out.close()
-	ef.close()
-
 
 if __name__ == "__main__":
 
