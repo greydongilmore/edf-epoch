@@ -6,9 +6,11 @@ import numpy as np
 import argparse
 import pyedflib
 import datetime
+os.chdir(r"/home/greydon/Documents/GitHub/edf-epoch")
+from ext_lib.edflibpy import EDFreader as EDFLIBReader
+
+
 debug=False
-
-
 if debug:
 	import glob
 	class Namespace:
@@ -37,23 +39,30 @@ def main(args):
 	else:
 		out_fname = os.path.splitext(args.data_fname)[0]+'_epoch.edf'
 	
-	signals, signal_headers, header = pyedflib.highlevel.read_edf(args.data_fname,ch_nrs=args.chans_keep,start_time=args.start_time,stop_time=args.end_time,verbose=True)
 	
-	all_labels=[header['SignalHeaders'][x]['label'] for x in range(len(header['SignalHeaders']))]
+	data_fname=r"/media/greydon/lhsc_data/datasets/ieeg_stim/ccep_data/sub-P046/ses-001/ieeg/sub-P046_ses-001_task-stim_run-01_ieeg.edf"
+
+	signals, signal_headers, header = pyedflib.highlevel.read_edf(data_fname,None,None,digital=False,verbose=True)
+	all_labels=[signal_headers[x]['label'] for x in range(len(signal_headers))]
 	
+	
+	
+	hdl = EDFLIBReader(data_fname)
+	events=hdl.annotationslist
+	events=[list(x) for x in events]
+
 	# determine the annoation data block index
-	ch_indx = [i for i,x in enumerate(all_labels) if x in header['channels']]
-	
+	ch_indx = hdl.getNumSignals()
+
 	for i in ch_indx:
-		header['SignalHeaders'][i]['physical_min']=int(header['SignalHeaders'][i]['physical_min'])
-		header['SignalHeaders'][i]['physical_max']=int(header['SignalHeaders'][i]['physical_max'])
-		header['SignalHeaders'][i]['sample_rate']=header['sampling_frequency']
-		header['SignalHeaders'][i]['sample_frequency']=header['sampling_frequency']
-	
-	header['SignalHeaders'][-1]['physical_min']=42900000
-	
+		signal_headers[i]['physical_min']=int(header['SignalHeaders'][i]['physical_min'])
+		signal_headers[i]['physical_max']=int(header['SignalHeaders'][i]['physical_max'])
+		signal_headers[i]['sample_rate']=header['sampling_frequency']
+		signal_headers[i]['sample_frequency']=header['sampling_frequency']
+
+	signal_headers[-1]['physical_min']=42900000
+
 	pyedflib.highlevel.write_edf(out_fname, signals, header['SignalHeaders'], header)
-	
 	
 
 if __name__ == "__main__":
